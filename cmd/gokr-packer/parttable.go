@@ -2,11 +2,10 @@ package main
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"os"
-
-	"golang.org/x/sys/unix"
 )
 
 var (
@@ -81,19 +80,11 @@ func partition(path string) error {
 		return err
 	}
 	log.Printf("device holds %d bytes", devsize)
+	if devsize == 0 {
+		return fmt.Errorf("path %s does not seem to be a device", path)
+	}
 
 	if err := writePartitionTable(o, devsize); err != nil {
-		return err
-	}
-
-	// Make Linux re-read the partition table. Sequence of system calls like in fdisk(8).
-	unix.Sync()
-
-	if err := rereadPartitions(uintptr(o.Fd())); err != nil {
-		return err
-	}
-
-	if err := o.Sync(); err != nil {
 		return err
 	}
 
@@ -101,6 +92,5 @@ func partition(path string) error {
 		return err
 	}
 
-	unix.Sync()
 	return nil
 }
